@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}إضافة عضو{% endblock %}
+{% block page_title %}إضافة عضو{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body p-4">
+    <form method="POST" action="{{ url_for('add_member') }}" enctype="multipart/form-data">
+      <h6 class="mb-3">البيانات الشخصية</h6>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">الاسم الكامل *</label>
+          <input type="text" name="full_name" class="form-control" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">الهاتف</label>
+          <input type="text" name="phone" class="form-control">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">واتساب</label>
+          <input type="text" name="whatsapp" class="form-control" placeholder="اتركه فارغاً لاستخدام الهاتف">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">النوع</label>
+          <select name="gender" class="form-select">
+            <option value="">-- اختر --</option>
+            <option value="male">ذكر</option>
+            <option value="female">أنثى</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">الصورة</label>
+          <input type="file" name="photo" class="form-control" accept="image/*">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">الوصف</label>
+          <input type="text" name="description" class="form-control">
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold">ملاحظات</label>
+          <textarea name="notes" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+
+      <h6 class="mb-3 mt-4">الاشتراك</h6>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">نوع الاشتراك</label>
+          <select name="plan_type" class="form-select">
+            {% for code, plan in plans.items() %}
+            <option value="{{ code }}">{{ plan.label }} ({{ plan.days }} يوم)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">السعر</label>
+          <input type="number" name="price" step="0.01" class="form-control" value="0">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">المدفوع</label>
+          <input type="number" name="amount_paid" step="0.01" class="form-control" value="0">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">طريقة الدفع</label>
+          <select name="payment_method" class="form-select">
+            <option value="cash">كاش</option>
+            <option value="wallet">محفظة</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">تاريخ البداية</label>
+          <input type="date" name="start_date" class="form-control">
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary px-4">حفظ العضو</button>
+        <a href="{{ url_for('members') }}" class="btn btn-outline-secondary">إلغاء</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

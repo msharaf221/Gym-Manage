@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}المستخدمون{% endblock %}
+{% block page_title %}إدارة المستخدمين{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <h6 class="mb-3">إضافة مستخدم</h6>
+    <form method="POST" action="{{ url_for('add_user') }}" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">اسم المستخدم</label>
+        <input type="text" name="username" class="form-control" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold">الاسم الكامل</label>
+        <input type="text" name="full_name" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">كلمة المرور</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">الصلاحية</label>
+        <select name="role" class="form-select">
+          <option value="staff">موظف</option>
+          <option value="admin">مدير</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary w-100">إضافة</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6 class="mb-3">المستخدمون</h6>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr><th>اسم المستخدم</th><th>الاسم الكامل</th><th>الصلاحية</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u['username'] }}</td>
+            <td>{{ u['full_name'] }}</td>
+            <td><span class="badge {{ 'bg-danger' if u['role'] == 'admin' else 'bg-primary' }}">{{ 'مدير' if u['role'] == 'admin' else 'موظف' }}</span></td>
+            <td>{% if u['is_active'] %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-secondary">معطّل</span>{% endif %}</td>
+            <td>
+              {% if u['role'] != 'admin' %}
+              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#perm{{ u['id'] }}"><i class="bi bi-shield-lock"></i> الصلاحيات</button>
+              {% endif %}
+              <form method="POST" action="{{ url_for('toggle_user', uid=u['id']) }}" class="d-inline">
+                <button class="btn btn-sm btn-outline-warning">{{ 'تعطيل' if u['is_active'] else 'تفعيل' }}</button>
+              </form>
+              {% if u['id'] != current_user.id %}
+              <form method="POST" action="{{ url_for('delete_user', uid=u['id']) }}" class="d-inline" onsubmit="return confirm('حذف هذا المستخدم؟')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% if u['role'] != 'admin' %}
+          <div class="modal fade" id="perm{{ u['id'] }}" tabindex="-1">
+            <div class="modal-dialog modal-lg"><div class="modal-content">
+              <form method="POST" action="{{ url_for('update_permissions', uid=u['id']) }}">
+                <div class="modal-header"><h5 class="modal-title">الصلاحيات — {{ u['username'] }}</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                  <div class="row">
+                    {% for key, label in permissions %}
+                    <div class="col-md-4 mb-2">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="{{ key }}" id="{{ key }}{{ u['id'] }}" {{ 'checked' if u[key] }}>
+                        <label class="form-check-label small" for="{{ key }}{{ u['id'] }}">{{ label }}</label>
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-primary">حفظ</button></div>
+              </form>
+            </div></div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

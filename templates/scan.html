@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}الحضور{% endblock %}
+{% block page_title %}الحضور (مسح الباركود){% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body p-4 text-center">
+        <h5 class="mb-1">تسجيل حضور عضو</h5>
+        <p class="text-muted small mb-4">امسح الباركود — يتم تسجيل الحضور تلقائياً بدون ضغط أي زر.</p>
+        <div class="input-group input-group-lg mb-3">
+          <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+          <input type="text" id="scan-input" class="form-control" placeholder="وجّه الماسح الضوئي هنا..." autofocus autocomplete="off">
+        </div>
+        <div class="small text-muted mb-2">
+          <span class="badge bg-secondary-subtle text-secondary">يعمل تلقائياً عند المسح</span>
+          <span class="badge bg-secondary-subtle text-secondary">أو اكتب الرقم واضغط Enter</span>
+        </div>
+        <div id="scan-result" class="mt-3 text-start"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const input = document.getElementById('scan-input');
+  const result = document.getElementById('scan-result');
+  const TOKEN = typeof AUTH_TOKEN !== 'undefined' ? AUTH_TOKEN : null;
+  let debounceTimer = null;
+  let busy = false;
+
+  function doCheckin() {
+    const code = input.value.trim();
+    if (!code || busy) return;
+    busy = true;
+    const url = '/api/scan' + (TOKEN ? '?token=' + encodeURIComponent(TOKEN) : '');
+    fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({code: code})
+    }).then(r => r.json()).then(d => {
+      if (d.success) {
+        const m = d.member;
+        if (m.days_left !== null && m.days_left <= 3) {
+          playWarnBeep();
+        } else {
+          playBeep();
+        }
+        renderMember(d.member, d.message);
+      } else {
+        result.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle"></i> ${d.message}</div>`;
+      }
+      input.value = '';
+    }).finally(() => { busy = false; input.focus(); });
+  }
+
+  function renderMember(m, msg) {
+    const statusMap = {active: ['نشط', 'success'], frozen: ['مجمّد', 'info'], expired: ['منتهي', 'danger']};
+    const st = statusMap[m.status] || [m.status, 'secondary'];
+    const photo = m.photo
+      ? `<img src="${m.photo}" class="rounded-circle" width="72" height="72" style="object-fit:cover">`
+      : `<div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center" style="width:72px;height:72px"><i class="bi bi-person text-secondary fs-2"></i></div>`;
+
+    let detailUrl = '/member/' + m.id;
+    if (TOKEN) detailUrl += '?token=' + encodeURIComponent(TOKEN);
+
+    result.innerHTML = `
+      <div class="alert alert-success py-3">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <i class="bi bi-check-circle fs-5"></i><span class="fw-semibold">${msg}</span>
+        </div>
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-center gap-3">
+              ${photo}
+              <div class="flex-grow-1">
+                <h5 class="mb-0">${m.name}</h5>
+                <div class="text-muted small">#${m.id}${m.phone ? ' · ' + m.phone : ''}</div>
+                <span class="badge bg-${st[1]} mt-1">${st[0]}</span>
+                ${m.plan_label ? `<span class="badge bg-secondary mt-1">${m.plan_label}</span>` : ''}
+                ${m.days_left !== null && m.days_left <= 3 ? `<span class="badge bg-warning text-dark mt-1"><i class="bi bi-exclamation-triangle"></i> ينتهي خلال ${m.days_left} يوم</span>` : ''}
+              </div>
+            </div>
+            <hr>
+            <div class="row g-2 small">
+              <div class="col-4"><div class="text-muted">السعر</div><div class="fw-semibold">${m.price}</div></div>
+              <div class="col-4"><div class="text-muted">المدفوع</div><div class="fw-semibold text-success">${m.paid}</div></div>
+              <div class="col-4"><div class="text-muted">المتبقي</div><div class="fw-semibold ${m.remaining > 0 ? 'text-danger' : ''}">${m.remaining}</div></div>
+              <div class="col-6"><div class="text-muted">البداية</div><div class="fw-semibold">${m.start_date || '-'}</div></div>
+              <div class="col-6"><div class="text-muted">النهاية</div><div class="fw-semibold">${m.end_date || '-'}</div></div>
+            </div>
+            <div class="mt-3">
+              <a href="${detailUrl}" class="btn btn-primary btn-sm"><i class="bi bi-person-lines-fill"></i> فتح صفحة العضو</a>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(); const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880; g.gain.value = 0.15;
+      o.start(); o.stop(ctx.currentTime + 0.15);
+    } catch (e) {}
+  }
+
+  function playWarnBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const g = ctx.createGain(); g.connect(ctx.destination); g.gain.value = 0.18;
+      [440, 340].forEach((freq, i) => {
+        const o = ctx.createOscillator(); o.connect(g);
+        o.frequency.value = freq; o.type = 'square';
+        o.start(ctx.currentTime + i * 0.2); o.stop(ctx.currentTime + i * 0.2 + 0.18);
+      });
+    } catch (e) {}
+  }
+
+  // Auto-scan: fire automatically on input pause (scanner types fast) or on Enter
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const v = input.value.trim();
+    if (v) debounceTimer = setTimeout(doCheckin, 350);
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(debounceTimer);
+      doCheckin();
+    }
+  });
+</script>
+{% endblock %}

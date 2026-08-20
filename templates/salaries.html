@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}الموظفون والرواتب{% endblock %}
+{% block page_title %}الموظفون والرواتب{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-3">إضافة موظف</h6>
+        <form method="POST" action="{{ url_for('salaries') }}">
+          <input type="hidden" name="action" value="add_employee">
+          <div class="row">
+            <div class="col-6 mb-2">
+              <label class="form-label small fw-semibold">الاسم الكامل</label>
+              <input type="text" name="full_name" class="form-control" required>
+            </div>
+            <div class="col-6 mb-2">
+              <label class="form-label small fw-semibold">الهاتف</label>
+              <input type="text" name="phone" class="form-control">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6 mb-2">
+              <label class="form-label small fw-semibold">المسمى الوظيفي</label>
+              <input type="text" name="job_title" class="form-control">
+            </div>
+            <div class="col-6 mb-2">
+              <label class="form-label small fw-semibold">الراتب الأساسي</label>
+              <input type="number" name="salary" step="0.01" class="form-control" required>
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">تاريخ التعيين</label>
+            <input type="date" name="hire_date" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">ملاحظات</label>
+            <input type="text" name="notes" class="form-control">
+          </div>
+          <button class="btn btn-primary w-100">إضافة موظف</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-3">منح سلفة</h6>
+        <form method="POST" action="{{ url_for('salaries') }}">
+          <input type="hidden" name="action" value="give_loan">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">الموظف</label>
+            <select name="emp_id" class="form-select" required>
+              {% for e in employees %}<option value="{{ e['emp_id'] }}">{{ e['full_name'] }} (سلف: {{ e['total_advances'] }})</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">المبلغ</label>
+            <input type="number" name="amount" step="0.01" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">السبب</label>
+            <input type="text" name="reason" class="form-control">
+          </div>
+          <button class="btn btn-warning w-100">منح السلفة</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">سداد سلفة</h6>
+        <form method="POST" action="{{ url_for('salaries') }}">
+          <input type="hidden" name="action" value="repay_loan">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">السلفة النشطة</label>
+            <select name="loan_id" class="form-select" required>
+              {% for l in loans %}<option value="{{ l['loan_id'] }}">{{ l['full_name'] }} — {{ l['amount'] }} (سُدد {{ l['repaid_amount'] }})</option>{% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">المبلغ</label>
+            <input type="number" name="amount" step="0.01" class="form-control" required>
+          </div>
+          <button class="btn btn-success w-100">سداد</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">الموظفون</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>الاسم</th><th>الوظيفة</th><th>الراتب</th><th>السلف</th><th>الصافي المستحق</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              {% for e in employees %}
+              <tr>
+                <td><a href="{{ url_for('employee_detail', emp_id=e['emp_id']) }}" class="fw-semibold">{{ e['full_name'] }}</a></td>
+                <td>{{ e['job_title'] }}</td>
+                <td>{{ e['basic_salary'] }}</td>
+                <td class="text-danger">{{ e['total_advances'] }}</td>
+                <td class="fw-semibold">{{ (e['basic_salary'] or 0) - (e['total_advances'] or 0) }}</td>
+                <td>
+                  <a href="{{ url_for('employee_detail', emp_id=e['emp_id']) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                  <form method="POST" action="{{ url_for('archive_employee', emp_id=e['emp_id']) }}" class="d-inline" onsubmit="return confirm('أرشفة هذا الموظف؟')">
+                    <button class="btn btn-sm btn-outline-secondary" title="أرشفة"><i class="bi bi-archive"></i></button>
+                  </form>
+                  <form method="POST" action="{{ url_for('delete_employee', emp_id=e['emp_id']) }}" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا الموظف نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')">
+                    <button class="btn btn-sm btn-outline-danger" title="حذف نهائي"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6" class="text-center text-muted py-4">لا يوجد موظفون.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

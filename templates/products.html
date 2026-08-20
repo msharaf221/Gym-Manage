@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}المنتجات{% endblock %}
+{% block page_title %}المنتجات{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">إضافة منتج</h6>
+        <form method="POST" action="{{ url_for('add_product') }}" enctype="multipart/form-data">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">الاسم</label>
+            <input type="text" name="product_name" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">السعر</label>
+            <input type="number" name="price" step="0.01" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">الكمية بالمخزن</label>
+            <input type="number" name="stock_quantity" class="form-control" value="0">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">رقم الباركود (اختياري)</label>
+            <input type="text" name="barcode" class="form-control" placeholder="امسح أو اكتب الباركود">
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">الصورة</label>
+            <input type="file" name="photo" class="form-control" accept="image/*">
+          </div>
+          <button class="btn btn-primary w-100">إضافة منتج</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">المخزون</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>الصورة</th><th>الاسم</th><th>السعر</th><th>المخزون</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              {% for p in products %}
+              <tr>
+                <td>
+                  {% if p['photo_path'] %}
+                  <img src="{{ p['photo_path'] }}" width="40" height="40" style="object-fit:cover" class="rounded">
+                  {% else %}<i class="bi bi-box text-secondary fs-4"></i>{% endif %}
+                </td>
+                <td>{{ p['product_name'] }}</td>
+                <td>{{ p['price'] }} {{ currency }}</td>
+                <td>
+                  {% if p['stock_quantity'] <= 0 %}<span class="badge bg-danger">نفد المخزون</span>
+                  {% elif p['stock_quantity'] <= 5 %}<span class="badge bg-warning">متبقي {{ p['stock_quantity'] }}</span>
+                  {% else %}<span class="badge bg-success">{{ p['stock_quantity'] }}</span>{% endif %}
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProduct{{ p['product_id'] }}"><i class="bi bi-pencil"></i></button>
+                  {% if p['barcode_path'] %}
+                  <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#barcode{{ p['product_id'] }}"><i class="bi bi-upc-scan"></i></button>
+                  {% endif %}
+                  {% if current_user.role == 'admin' or current_user.can_products %}
+                  <form method="POST" action="{{ url_for('delete_product', pid=p['product_id']) }}" class="d-inline" onsubmit="return confirm('حذف هذا المنتج؟')">
+                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              <!-- barcode modal -->
+              {% if p['barcode_path'] %}
+              <div class="modal fade" id="barcode{{ p['product_id'] }}" tabindex="-1">
+                <div class="modal-dialog modal-sm"><div class="modal-content">
+                  <div class="modal-header"><h5 class="modal-title">باركود المنتج</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                  <div class="modal-body text-center">
+                    <img src="{{ p['barcode_path'] }}?t={{ range(1, 10000)|random }}" class="img-fluid rounded bg-white" alt="barcode">
+                    <div class="mt-2 text-center">
+                      <a href="{{ p['barcode_path'] }}?t={{ range(1, 10000)|random }}" download="barcode.png" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i> تحميل للطباعة</a>
+                    </div>
+                  </div>
+                </div></div>
+              </div>
+              {% endif %}
+              <!-- edit modal -->
+              <div class="modal fade" id="editProduct{{ p['product_id'] }}" tabindex="-1">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <form method="POST" action="{{ url_for('edit_product', pid=p['product_id']) }}">
+                      <div class="modal-header"><h5 class="modal-title">تعديل منتج</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                      <div class="modal-body">
+                        <div class="mb-2"><label class="form-label small fw-semibold">الاسم</label>
+                          <input type="text" name="product_name" class="form-control" value="{{ p['product_name'] }}"></div>
+                        <div class="mb-2"><label class="form-label small fw-semibold">السعر</label>
+                          <input type="number" name="price" step="0.01" class="form-control" value="{{ p['price'] }}"></div>
+                        <div class="mb-2"><label class="form-label small fw-semibold">المخزون</label>
+                          <input type="number" name="stock_quantity" class="form-control" value="{{ p['stock_quantity'] }}"></div>
+                        <div class="mb-2"><label class="form-label small fw-semibold">رقم الباركود</label>
+                          <input type="text" name="barcode" class="form-control" value="{{ p['barcode'] or '' }}"></div>
+                      </div>
+                      <div class="modal-footer">
+                        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button class="btn btn-primary">حفظ</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-4">لا توجد منتجات.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

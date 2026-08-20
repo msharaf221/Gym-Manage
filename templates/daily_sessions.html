@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}الحصص اليومية{% endblock %}
+{% block page_title %}الحصص اليومية{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">حصة جديدة (مفتوحة)</h6>
+        <form method="POST" action="{{ url_for('daily_sessions') }}">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">اسم العضو</label>
+            <input type="text" name="member_name" class="form-control" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">الهاتف</label>
+            <input type="text" name="phone" class="form-control">
+          </div>
+          <div class="row">
+            <div class="col-6 mb-2">
+              <label class="form-label small fw-semibold">السعر</label>
+              <input type="number" name="price" step="0.01" class="form-control" value="0">
+            </div>
+            <div class="col-6 mb-2">
+              <label class="form-label small fw-semibold">عدد الحصص</label>
+              <input type="number" name="sessions_count" class="form-control" value="1" min="1">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">طريقة الدفع</label>
+            <select name="payment_method" class="form-select">
+              <option value="cash">كاش</option>
+              <option value="wallet">محفظة</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">ملاحظات</label>
+            <input type="text" name="notes" class="form-control">
+          </div>
+          <button class="btn btn-primary w-100">تسجيل الحصة</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">الحصص</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>الاسم</th><th>الهاتف</th><th>السعر</th><th>الحصص</th><th>المستخدم</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              {% for s in sessions %}
+              <tr>
+                <td>{{ s['member_name'] }}</td>
+                <td>{{ s['phone'] }}</td>
+                <td>{{ s['price'] }}</td>
+                <td>{{ s['sessions_count'] }}</td>
+                <td>
+                  <span class="badge {% if s['sessions_used'] >= s['sessions_count'] %}bg-success{% else %}bg-primary{% endif %}">{{ s['sessions_used'] }} / {{ s['sessions_count'] }}</span>
+                </td>
+                <td>{{ s['session_date'] }}</td>
+                <td>
+                  {% if s['sessions_used'] < s['sessions_count'] %}
+                  <form method="POST" action="{{ url_for('use_session', sid=s['session_id']) }}" class="d-inline">
+                    <button class="btn btn-sm btn-outline-success"><i class="bi bi-check2"></i> استخدام</button>
+                  </form>
+                  {% endif %}
+                  {% if current_user.role == 'admin' or current_user.can_delete_sessions %}
+                  <form method="POST" action="{{ url_for('delete_session', sid=s['session_id']) }}" class="d-inline" onsubmit="return confirm('حذف هذه الحصة؟')">
+                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" class="text-center text-muted py-4">لا توجد حصص.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

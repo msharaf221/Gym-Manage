@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}لوحة التحكم{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card" style="background:#16a34a">
+      <div class="value">{{ active }}</div>
+      <div class="label">الأعضاء النشطون</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card" style="background:#dc2626">
+      <div class="value">{{ expired }}</div>
+      <div class="label">الأعضاء المنتهون</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card" style="background:#0891b2">
+      <div class="value">{{ frozen }}</div>
+      <div class="label">الأعضاء المجمّدون</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card" style="background:#7c3aed">
+      <div class="value">{{ today_checkins }}</div>
+      <div class="label">حضور اليوم</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% if daily_finance %}
+  <div class="col-md-6 col-xl-3"><div class="card p-3">
+    <div class="small text-muted">إيرادات اليوم</div>
+    <div class="h4 text-success">{{ daily_finance.today_rev|round(2) }} {{ currency }}</div>
+  </div></div>
+  <div class="col-md-6 col-xl-3"><div class="card p-3">
+    <div class="small text-muted">مصروفات اليوم</div>
+    <div class="h4 text-danger">{{ daily_finance.today_exp|round(2) }} {{ currency }}</div>
+  </div></div>
+  {% endif %}
+  {% if monthly_finance %}
+  <div class="col-md-6 col-xl-3"><div class="card p-3">
+    <div class="small text-muted">إيرادات الشهر</div>
+    <div class="h4 text-success">{{ monthly_finance.mtd_rev|round(2) }} {{ currency }}</div>
+  </div></div>
+  <div class="col-md-6 col-xl-3"><div class="card p-3">
+    <div class="small text-muted">صافي الشهر</div>
+    <div class="h4">{{ monthly_finance.mtd_net|round(2) }} {{ currency }}</div>
+  </div></div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3"><i class="bi bi-clock-history"></i> آخر عمليات الحضور</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>العضو</th><th>الوقت</th><th>تاريخ اليوم</th></tr></thead>
+            <tbody>
+              {% for r in recent %}
+              <tr>
+                <td><a href="{{ url_for('member_detail', member_id=r['mid']) }}">{{ r['full_name'] }}</a></td>
+                <td>{{ r['check_in_time'] }}</td>
+                <td>{{ r['business_date'] }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="3" class="text-muted text-center py-3">لا يوجد حضور اليوم.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-3"><i class="bi bi-exclamation-triangle text-warning"></i> اشتراكات قاربت على الانتهاء</h6>
+        <div class="list-group list-group-flush">
+          {% for s in soon %}
+          <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+            <a href="{{ url_for('member_detail', member_id=s.id) }}">{{ s.name }}</a>
+            <span class="badge-soft bg-warning-subtle text-warning-emphasis">متبقي {{ s.days_left }} يوم</span>
+          </div>
+          {% else %}
+          <div class="text-muted small py-2">لا توجد اشتراكات تنتهي خلال 5 أيام.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3"><i class="bi bi-bell"></i> الإشعارات</h6>
+        <div class="list-group list-group-flush">
+          {% for n in notifications %}
+          <div class="list-group-item px-0">
+            <div class="fw-semibold small">{{ n['title'] }}</div>
+            <div class="small text-muted">{{ n['message'] }}</div>
+          </div>
+          {% else %}
+          <div class="text-muted small py-2">لا توجد إشعارات.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

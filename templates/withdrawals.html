@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}المصروفات{% endblock %}
+{% block page_title %}المصروفات{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">مصروف جديد</h6>
+        <form method="POST" action="{{ url_for('withdrawals') }}">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">المبلغ</label>
+            <input type="number" name="amount" step="0.01" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">الدفع من</label>
+            <select name="payment_method" class="form-select">
+              <option value="cash">كاش</option>
+              <option value="wallet">محفظة</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">السبب</label>
+            <input type="text" name="reason" class="form-control" required>
+          </div>
+          <button class="btn btn-primary w-100 mb-3"><i class="bi bi-plus-lg"></i> إضافة مصروف</button>
+        </form>
+        <hr>
+        <form method="POST" action="{{ url_for('empty_wallet') }}" onsubmit="return confirm('هل أنت متأكد من تصفير المحفظة وتسجيل سحب بالرصيد المتاح؟')">
+          <button class="btn btn-warning w-100"><i class="bi bi-wallet2"></i> تصفير المحفظة</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">سجل المصروفات</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>المبلغ</th><th>السبب</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              {% for w in withdrawals %}
+              <tr>
+                <td class="text-danger fw-semibold">-{{ w['amount'] }}</td>
+                <td>{{ w['reason'] }}</td>
+                <td>{{ w['withdrawal_date'] }}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editW{{ w['withdrawal_id'] }}"><i class="bi bi-pencil"></i></button>
+                  {% if current_user.role == 'admin' or current_user.can_delete_withdrawals %}
+                  <form method="POST" action="{{ url_for('delete_withdrawal', wid=w['withdrawal_id']) }}" class="d-inline" onsubmit="return confirm('حذف هذا المصروف؟')">
+                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              <div class="modal fade" id="editW{{ w['withdrawal_id'] }}" tabindex="-1">
+                <div class="modal-dialog"><div class="modal-content">
+                  <form method="POST" action="{{ url_for('edit_withdrawal', wid=w['withdrawal_id']) }}">
+                    <div class="modal-header"><h5 class="modal-title">تعديل مصروف</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                      <div class="mb-2"><label class="form-label small fw-semibold">المبلغ</label>
+                        <input type="number" name="amount" step="0.01" class="form-control" value="{{ w['amount'] }}"></div>
+                      <div class="mb-2"><label class="form-label small fw-semibold">السبب</label>
+                        <input type="text" name="reason" class="form-control" value="{{ w['reason'] }}"></div>
+                    </div>
+                    <div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-primary">حفظ</button></div>
+                  </form>
+                </div></div>
+              </div>
+              {% else %}
+              <tr><td colspan="4" class="text-center text-muted py-4">لا توجد مصروفات.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

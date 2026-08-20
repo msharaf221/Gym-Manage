@@ -1,0 +1,29 @@
+# Power Home Gym Management System — dependencies
+# Install with:  pip install -r requirements.txt
+
+# --- Web framework ---
+Flask>=3.0
+Werkzeug>=3.0
+itsdangerous>=2.1          # signed auth tokens (session fallback)
+
+# --- Barcode / QR / imaging ---
+python-barcode>=0.15       # Code128 barcodes
+qrcode>=7.4                # member QR codes
+Pillow>=10.0               # image rendering (tickets/labels)
+
+# --- Arabic text shaping (required for correct labels) ---
+arabic-reshaper>=3.0       # connect Arabic letters
+python-bidi>=0.4.2         # right-to-left display order
+
+# --- Excel export ---
+openpyxl>=3.1
+
+# --- Scheduling ---
+APScheduler>=3.10          # daily expiry-check job
+
+# --- Networking ---
+requests>=2.31             # WhatsApp Cloud API
+
+# --- Optional: WhatsApp desktop fallback (needs a logged-in WhatsApp Web) ---
+# Uncomment if you want the pywhatkit fallback alongside the Cloud API:
+# pywhatkit>=5.3

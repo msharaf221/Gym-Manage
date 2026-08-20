@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}{{ member['full_name'] }}{% endblock %}
+{% block page_title %}بيانات العضو{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body text-center p-4">
+        {% if member['photo_path'] %}
+        <img src="{{ member['photo_path'] }}" class="rounded-circle mb-3" width="110" height="110" style="object-fit:cover">
+        {% else %}
+        <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center mx-auto mb-3" style="width:110px;height:110px"><i class="bi bi-person" style="font-size:3rem;color:#9ca3af"></i></div>
+        {% endif %}
+        <h5 class="mb-1">{{ member['full_name'] }}</h5>
+        <div class="text-muted small mb-3">#{{ member['id'] }}{% if member['gender'] %} · {{ 'ذكر' if member['gender'] == 'male' else 'أنثى' }}{% endif %}</div>
+        {% if status == 'active' %}
+        <span class="badge-soft bg-success-subtle text-success-emphasis mb-3 d-inline-block">نشط</span>
+        {% elif status == 'frozen' %}
+        <span class="badge-soft bg-info-subtle text-info-emphasis mb-3 d-inline-block">مجمّد</span>
+        {% else %}
+        <span class="badge-soft bg-danger-subtle text-danger-emphasis mb-3 d-inline-block">منتهي</span>
+        {% endif %}
+        <ul class="list-group list-group-flush text-start small">
+          <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">الهاتف</span><span>{{ member['phone'] or '-' }}</span></li>
+          <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">واتساب</span><span>{{ member['whatsapp'] or '-' }}</span></li>
+          <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">تاريخ التسجيل</span><span>{{ member['created_at'] }}</span></li>
+          {% if current_sub %}
+          <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">الاشتراك</span><span>{{ current_sub['plan_type']|plan_label }}</span></li>
+          <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">تاريخ الانتهاء</span><span>{{ current_sub['end_date'] }}</span></li>
+          <li class="list-group-item d-flex justify-content-between px-0"><span class="text-muted">المدفوع / السعر</span><span>{{ current_sub['amount_paid'] }} / {{ current_sub['price'] }}</span></li>
+          {% endif %}
+          {% if member['description'] %}
+          <li class="list-group-item px-0"><span class="text-muted">الوصف</span><div>{{ member['description'] }}</div></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-body">
+        <h6 class="mb-3">بطاقة العضو (للتيكت والطباعة)</h6>
+        {% if member['barcode_path'] %}
+        <img src="{{ member['barcode_path'] }}?t={{ member['id'] }}" class="img-fluid bg-white rounded border border-2" style="max-width: 100%" alt="barcode" id="barcode-img">
+        <script>
+            // Add current time to bypass cache completely
+            var nocache_url = "{{ member['barcode_path'] }}?t=" + new Date().getTime();
+            document.getElementById('barcode-img').src = nocache_url;
+            document.getElementById('barcode-download').href = nocache_url;
+        </script>
+        <div class="mt-2 d-flex justify-content-center gap-2 flex-wrap">
+          <a id="barcode-download" href="{{ member['barcode_path'] }}" download="ticket.png" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i> تحميل للطباعة</a>
+          {% if current_user.role == 'admin' or current_user.can_edit_members %}
+          <form method="POST" action="{{ url_for('regen_barcode', member_id=member['id']) }}">
+            <button class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-arrow-clockwise"></i> إعادة توليد البطاقة</button>
+          </form>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="text-muted small">لا يوجد باركود.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-3">الإجراءات</h6>
+        <div class="d-flex flex-wrap gap-2">
+          {% if current_user.role == 'admin' or current_user.can_edit_members %}
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('edit_member', member_id=member['id']) }}"><i class="bi bi-pencil"></i> تعديل</a>
+          {% if not member['is_frozen'] %}
+          <form method="POST" action="{{ url_for('freeze_member', member_id=member['id']) }}" class="d-inline">
+            <button class="btn btn-outline-info btn-sm"><i class="bi bi-snow"></i> تجميد</button>
+          </form>
+          {% else %}
+          <form method="POST" action="{{ url_for('unfreeze_member', member_id=member['id']) }}" class="d-inline">
+            <button class="btn btn-outline-success btn-sm"><i class="bi bi-sun"></i> فك التجميد</button>
+          </form>
+          {% endif %}
+          {% endif %}
+          {% if current_user.role == 'admin' or current_user.can_add_members %}
+          <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#renewModal"><i class="bi bi-arrow-repeat"></i> تجديد</button>
+          {% endif %}
+          <form method="POST" action="{{ url_for('send_welcome', member_id=member['id']) }}" class="d-inline">
+            <button class="btn btn-outline-success btn-sm"><i class="bi bi-whatsapp"></i> ترحيب</button>
+          </form>
+          <form method="POST" action="{{ url_for('send_reminder', member_id=member['id']) }}" class="d-inline">
+            <button class="btn btn-outline-warning btn-sm"><i class="bi bi-whatsapp"></i> تذكير</button>
+          </form>
+          <form method="POST" action="{{ url_for('send_barcode', member_id=member['id']) }}" class="d-inline">
+            <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-upc-scan"></i> إرسال الباركود</button>
+          </form>
+          {% if current_user.role == 'admin' or current_user.can_delete_members %}
+          <form method="POST" action="{{ url_for('delete_member', member_id=member['id']) }}" class="d-inline" onsubmit="return confirm('هل تريد حذف هذا العضو نهائياً؟')">
+            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> حذف</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-3">سجل الحضور</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead><tr><th>الوقت</th><th>تاريخ اليوم</th></tr></thead>
+            <tbody>
+              {% for c in checkins %}
+              <tr><td>{{ c['check_in_time'] }}</td><td>{{ c['business_date'] }}</td></tr>
+              {% else %}
+              <tr><td colspan="2" class="text-muted text-center py-3">لا يوجد حضور.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">سجل الاشتراكات</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead><tr><th>الاشتراك</th><th>السعر</th><th>المدفوع</th><th>البداية</th><th>النهاية</th><th>الحالة</th></tr></thead>
+            <tbody>
+              {% for s in subs %}
+              <tr>
+                <td>{{ s['plan_type']|plan_label }}</td>
+                <td>{{ s['price'] }}</td>
+                <td>{{ s['amount_paid'] }}</td>
+                <td>{{ s['start_date'] }}</td>
+                <td>{{ s['end_date'] }}</td>
+                <td>{% if s['is_paid'] %}<span class="badge bg-success">مدفوع</span>{% else %}<span class="badge bg-warning">جزئي</span>{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Renew Modal -->
+<div class="modal fade" id="renewModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('renew_member', member_id=member['id']) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">تجديد الاشتراك</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">نوع الاشتراك</label>
+            <select name="plan_type" class="form-select">
+              {% for code, plan in plans.items() %}
+              <option value="{{ code }}">{{ plan.label }} ({{ plan.days }} يوم)</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label small fw-semibold">السعر</label>
+              <input type="number" name="price" step="0.01" class="form-control" value="0">
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label small fw-semibold">المدفوع</label>
+              <input type="number" name="amount_paid" step="0.01" class="form-control" value="0">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">تاريخ بداية التجديد (اختياري)</label>
+            <input type="date" name="start_date" class="form-control" value="{{ current_sub['end_date'] if current_sub and status == 'active' else '' }}">
+            <small class="text-muted">افتراضياً يبدأ من اليوم إذا كان منتهي، أو من نهاية الاشتراك الحالي إذا كان سارياً. يمكنك تغييره كما تشاء.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">طريقة الدفع</label>
+            <select name="payment_method" class="form-select">
+              <option value="cash">كاش</option>
+              <option value="wallet">محفظة</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="submit" class="btn btn-primary">تجديد</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

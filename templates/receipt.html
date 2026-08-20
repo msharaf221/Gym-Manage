@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إيصال بيع #{{ sale['sale_id'] }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    * { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; }
+    body { background: #f1f5f9; display: flex; justify-content: center; padding: 24px; }
+    .receipt {
+      background: #fff; width: 320px; padding: 20px; border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+    .receipt .head { text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 12px; margin-bottom: 12px; }
+    .receipt .head h3 { margin: 0 0 2px; font-size: 18px; }
+    .receipt .head .sub { color: #64748b; font-size: 12px; }
+    .receipt .row { display: flex; justify-content: space-between; font-size: 14px; margin: 6px 0; }
+    .receipt .row .lbl { color: #64748b; }
+    .receipt .total { border-top: 2px dashed #cbd5e1; margin-top: 12px; padding-top: 10px; font-size: 18px; font-weight: 800; }
+    .receipt .foot { text-align: center; color: #94a3b8; font-size: 11px; margin-top: 14px; }
+    .no-print { text-align: center; margin-top: 16px; }
+    .btn { display: inline-block; padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer;
+           background: {{ primary_color }}; color: #fff; font-family: inherit; font-size: 14px; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .receipt { box-shadow: none; width: 100%; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="receipt">
+      <div class="head">
+        <h3>{{ gym_name }}</h3>
+        <div class="sub">إيصال بيع</div>
+      </div>
+      <div class="row"><span class="lbl">رقم الإيصال</span><span>#{{ sale['sale_id'] }}</span></div>
+      <div class="row"><span class="lbl">الصنف</span><span>{{ sale['item_name'] }}</span></div>
+      <div class="row"><span class="lbl">الكمية</span><span>{{ sale['quantity'] }}</span></div>
+      <div class="row"><span class="lbl">سعر القطعة</span><span>{{ sale['price'] }} {{ currency }}</span></div>
+      <div class="row"><span class="lbl">التاريخ</span><span>{{ sale['sale_date'] }}</span></div>
+      <div class="row"><span class="lbl">طريقة الدفع</span><span>{{ 'كاش' if sale['payment_method'] == 'cash' else 'محفظة' }}</span></div>
+      {% if sale['notes'] %}
+      <div class="row"><span class="lbl">ملاحظات</span><span>{{ sale['notes'] }}</span></div>
+      {% endif %}
+      <div class="row total"><span>الإجمالي</span><span>{{ sale['total'] }} {{ currency }}</span></div>
+      <div class="foot">شكراً لزيارتكم — {{ gym_name }}</div>
+    </div>
+    <div class="no-print">
+      <button class="btn" onclick="window.print()"><i class="bi bi-printer"></i> طباعة</button>
+      <button class="btn" style="background:#64748b" onclick="window.close()">إغلاق</button>
+    </div>
+  </div>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); }</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}المبيعات{% endblock %}
+{% block page_title %}المبيعات{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">بيع جديد</h6>
+        <form method="POST" action="{{ url_for('add_sale') }}">
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">مسح الباركود</label>
+            <input type="text" id="sale-barcode" name="barcode" class="form-control" placeholder="امسح الباركود هنا" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();scanBarcode();}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">أو اختر المنتج</label>
+            <select name="product_id" class="form-select" id="sale-product" onchange="fillPrice()">
+              <option value="">-- اختر منتج --</option>
+              {% for p in products %}
+              <option value="{{ p['product_id'] }}" data-barcode="{{ p['barcode'] or '' }}" data-price="{{ p['price'] }}" data-stock="{{ p['stock_quantity'] }}">{{ p['product_name'] }} ({{ p['price'] }} {{ currency }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">أو اسم صنف (مخصص)</label>
+            <input type="text" name="item_name" class="form-control">
+          </div>
+          <div class="row">
+            <div class="col-6 mb-2">
+              <label class="form-label small fw-semibold">الكمية</label>
+              <input type="number" name="quantity" class="form-control" value="1" min="1">
+            </div>
+            <div class="col-6 mb-2">
+              <label class="form-label small fw-semibold">السعر (للقطعة)</label>
+              <input type="number" name="price" id="sale-price" step="0.01" class="form-control" value="0">
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">طريقة الدفع</label>
+            <select name="payment_method" class="form-select">
+              <option value="cash">كاش</option>
+              <option value="wallet">محفظة</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">ملاحظات</label>
+            <input type="text" name="notes" class="form-control">
+          </div>
+          <button class="btn btn-primary w-100">تسجيل البيع</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">سجل المبيعات</h6>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th><th>التاريخ</th><th>الطريقة</th><th>إجراءات</th></tr></thead>
+            <tbody>
+              {% for s in sales %}
+              <tr>
+                <td>{{ s['item_name'] }}</td>
+                <td>{{ s['quantity'] }}</td>
+                <td>{{ s['price'] }}</td>
+                <td class="fw-semibold">{{ s['total'] }}</td>
+                <td>{{ s['sale_date'] }}</td>
+                <td>{{ s['payment_method'] }}</td>
+                <td>
+                  <a href="{{ url_for('sale_receipt', sid=s['sale_id']) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="طباعة إيصال"><i class="bi bi-receipt"></i></a>
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editSale{{ s['sale_id'] }}"><i class="bi bi-pencil"></i></button>
+                  {% if current_user.role == 'admin' or current_user.can_delete_sales %}
+                  <form method="POST" action="{{ url_for('delete_sale', sid=s['sale_id']) }}" class="d-inline" onsubmit="return confirm('حذف هذا البيع؟ سيتم إرجاع الكمية للمخزون.')">
+                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              <div class="modal fade" id="editSale{{ s['sale_id'] }}" tabindex="-1">
+                <div class="modal-dialog"><div class="modal-content">
+                  <form method="POST" action="{{ url_for('edit_sale', sid=s['sale_id']) }}">
+                    <div class="modal-header"><h5 class="modal-title">تعديل بيع</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                      <div class="mb-2"><label class="form-label small fw-semibold">الكمية</label>
+                        <input type="number" name="quantity" class="form-control" value="{{ s['quantity'] }}"></div>
+                      <div class="mb-2"><label class="form-label small fw-semibold">السعر (للقطعة)</label>
+                        <input type="number" name="price" step="0.01" class="form-control" value="{{ s['price'] }}"></div>
+                    </div>
+                    <div class="modal-footer"><button class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-primary">حفظ</button></div>
+                  </form>
+                </div></div>
+              </div>
+              {% else %}
+              <tr><td colspan="7" class="text-center text-muted py-4">لا توجد مبيعات.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function fillPrice() {
+  const sel = document.getElementById('sale-product');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt && opt.dataset.price) {
+    document.getElementById('sale-price').value = opt.dataset.price;
+  }
+}
+function scanBarcode() {
+  const barcode = document.getElementById('sale-barcode').value.trim();
+  if (!barcode) return;
+  const sel = document.getElementById('sale-product');
+  let found = false;
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].dataset.barcode === barcode || sel.options[i].value === barcode) {
+      sel.selectedIndex = i;
+      fillPrice();
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    alert("المنتج غير موجود!");
+  }
+  // optional: auto-submit the form if found
+  // if (found) document.querySelector('form').submit();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}سجل العمليات{% endblock %}
+{% block page_title %}سجل العمليات{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>الكيان</th><th>الرقم</th><th>التفاصيل</th><th>IP</th></tr></thead>
+        <tbody>
+          {% for l in logs %}
+          <tr>
+            <td class="text-nowrap">{{ l['timestamp'] }}</td>
+            <td>{{ l['username'] or l['user_id'] }}</td>
+            <td><span class="badge bg-secondary">{{ l['action'] }}</span></td>
+            <td>{{ l['entity_type'] or '-' }}</td>
+            <td>{{ l['entity_id'] or '-' }}</td>
+            <td class="small text-muted">{{ l['new_values'] or l['old_values'] or '-' }}</td>
+            <td class="small text-muted">{{ l['ip_address'] or '-' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">لا توجد عمليات مسجلة.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

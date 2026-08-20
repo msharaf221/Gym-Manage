@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}التقارير المالية{% endblock %}
+{% block page_title %}التقارير المالية{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h6 class="mb-0">آخر 6 شهور مالية</h6>
+  <form method="POST" action="{{ url_for('create_snapshot') }}">
+    <button class="btn btn-primary"><i class="bi bi-camera"></i> إنشاء لقطة شهرية</button>
+  </form>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h6 class="mb-3"><i class="bi bi-bar-chart"></i> الإيرادات مقابل المصروفات (آخر 6 شهور)</h6>
+    <canvas id="financeChart" height="110"></canvas>
+  </div>
+</div>
+
+<div class="accordion mb-4" id="monthsAccordion">
+  {% for m in months %}
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="heading{{ loop.index }}">
+      <button class="accordion-button {{ 'collapsed' if not loop.first else '' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+        <div class="d-flex w-100 justify-content-between me-3 align-items-center">
+          <span class="fw-bold fs-6">شهر {{ m.label }}</span>
+          <span class="badge {{ 'bg-success' if m['net'] >= 0 else 'bg-danger' }}">الصافي: {{ m['net']|round(2) }}</span>
+        </div>
+      </button>
+    </h2>
+    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {{ 'show' if loop.first else '' }}" data-bs-parent="#monthsAccordion">
+      <div class="accordion-body">
+        <div class="d-flex justify-content-end mb-2">
+          <a class="btn btn-sm btn-outline-success" href="{{ url_for('export_financial', year_month=m.label) }}"><i class="bi bi-file-earmark-excel"></i> تصدير Excel لهذا الشهر</a>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <h6 class="text-success mb-3">تفاصيل الكاش — الدرج ({{ m['cash_net']|round(2) }})</h6>
+                <table class="table table-sm">
+                  <tbody>
+                    <tr><td>الاشتراكات</td><td class="text-end text-success">+{{ m['rep']['sub_cash']|round(2) }}</td></tr>
+                    <tr><td>المبيعات</td><td class="text-end text-success">+{{ m['rep']['sale_cash']|round(2) }}</td></tr>
+                    <tr><td>الحصص</td><td class="text-end text-success">+{{ m['rep']['session_cash']|round(2) }}</td></tr>
+                    <tr><td>سداد السلف</td><td class="text-end text-success">+{{ m['rep']['loan_repay_cash']|round(2) }}</td></tr>
+                    <tr><td>المصروفات</td><td class="text-end text-danger">-{{ m['rep']['withdrawals_cash']|round(2) }}</td></tr>
+                    <tr><td>سلف منصرفة</td><td class="text-end text-danger">-{{ m['rep']['loans_given_cash']|round(2) }}</td></tr>
+                    <tr class="table-success fw-bold"><td>الإجمالي داخل</td><td class="text-end">+{{ m['cash_in']|round(2) }}</td></tr>
+                    <tr class="table-danger fw-bold"><td>الإجمالي خارج</td><td class="text-end">-{{ m['cash_out']|round(2) }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <h6 class="text-primary mb-3">تفاصيل المحفظة — فودافون/انستاباي ({{ m['wallet_net']|round(2) }})</h6>
+                <table class="table table-sm">
+                  <tbody>
+                    <tr><td>الاشتراكات</td><td class="text-end text-success">+{{ m['rep']['sub_wallet']|round(2) }}</td></tr>
+                    <tr><td>المبيعات</td><td class="text-end text-success">+{{ m['rep']['sale_wallet']|round(2) }}</td></tr>
+                    <tr><td>الحصص</td><td class="text-end text-success">+{{ m['rep']['session_wallet']|round(2) }}</td></tr>
+                    <tr><td>سداد السلف</td><td class="text-end text-success">+{{ m['rep']['loan_repay_wallet']|round(2) }}</td></tr>
+                    <tr><td>المصروفات</td><td class="text-end text-danger">-{{ m['rep']['withdrawals_wallet']|round(2) }}</td></tr>
+                    <tr><td>سلف منصرفة</td><td class="text-end text-danger">-{{ m['rep']['loans_given_wallet']|round(2) }}</td></tr>
+                    <tr class="table-primary fw-bold"><td>الإجمالي داخل</td><td class="text-end">+{{ m['wallet_in']|round(2) }}</td></tr>
+                    <tr class="table-warning fw-bold"><td>الإجمالي خارج</td><td class="text-end">-{{ m['wallet_out']|round(2) }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6 class="mb-3">اللقطات الشهرية</h6>
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead><tr><th>الشهر</th><th>الفترة</th><th>المدفوعات</th><th>المبيعات</th><th>المصروفات</th><th>الصافي</th><th>الأعضاء</th></tr></thead>
+        <tbody>
+          {% for s in snapshots %}
+          <tr>
+            <td>{{ s['year_month'] }}</td>
+            <td>{{ s['start_date'] }} ← {{ s['end_date'] }}</td>
+            <td>{{ s['total_payments'] }}</td>
+            <td>{{ s['total_sales'] }}</td>
+            <td>{{ s['total_withdrawals'] }}</td>
+            <td class="fw-semibold">{{ s['net_revenue'] }}</td>
+            <td>{{ s['member_count'] }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-3">لا توجد لقطات بعد.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const labels = [{% for m in months %}'{{ m.label }}',{% endfor %}];
+  const income = [{% for m in months %}{{ m['in'] }},{% endfor %}];
+  const expense = [{% for m in months %}{{ m['out'] }},{% endfor %}];
+  new Chart(document.getElementById('financeChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'الإيرادات', data: income, backgroundColor: 'rgba(22,163,74,.75)', borderRadius: 6 },
+        { label: 'المصروفات', data: expense, backgroundColor: 'rgba(220,38,38,.75)', borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top', rtl: true } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+</script>
+{% endblock %}

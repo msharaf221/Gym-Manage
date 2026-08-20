@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}التقرير اليومي{% endblock %}
+{% block page_title %}التقرير اليومي{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" class="d-flex gap-2 align-items-center" style="max-width:420px">
+      <label class="fw-semibold text-nowrap">التاريخ:</label>
+      <input type="date" name="date" value="{{ report.date }}" class="form-control">
+      <button class="btn btn-primary">عرض</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-3"><div class="stat-card border border-2 border-success" style="background:#f0fdf4; color:#16a34a">
+    <div class="label">إيرادات الكاش</div>
+    <div class="value">{{ report.cash_in|round(2) }}</div>
+  </div></div>
+  <div class="col-md-3"><div class="stat-card border border-2 border-danger" style="background:#fef2f2; color:#dc2626">
+    <div class="label">مصروفات الكاش</div>
+    <div class="value">{{ report.cash_out|round(2) }}</div>
+  </div></div>
+  <div class="col-md-3"><div class="stat-card border border-2 border-primary" style="background:#eff6ff; color:#2563eb">
+    <div class="label">إيرادات المحفظة</div>
+    <div class="value">{{ report.wallet_in|round(2) }}</div>
+  </div></div>
+  <div class="col-md-3"><div class="stat-card border border-2 border-warning" style="background:#fffbeb; color:#d97706">
+    <div class="label">مصروفات المحفظة</div>
+    <div class="value">{{ report.wallet_out|round(2) }}</div>
+  </div></div>
+</div>
+
+<div class="row mt-3 g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3 text-success">الكاش — الدرج ({{ report.cash_net|round(2) }})</h6>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <tbody>
+              <tr><td>الاشتراكات</td><td class="text-end text-success">+{{ report.rep.sub_cash|round(2) }}</td></tr>
+              <tr><td>المبيعات</td><td class="text-end text-success">+{{ report.rep.sale_cash|round(2) }}</td></tr>
+              <tr><td>الحصص</td><td class="text-end text-success">+{{ report.rep.session_cash|round(2) }}</td></tr>
+              <tr><td>سداد السلف</td><td class="text-end text-success">+{{ report.rep.loan_repay_cash|round(2) }}</td></tr>
+              <tr><td>المصروفات</td><td class="text-end text-danger">-{{ report.rep.withdrawals_cash|round(2) }}</td></tr>
+              <tr><td>سلف منصرفة</td><td class="text-end text-danger">-{{ report.rep.loans_given_cash|round(2) }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3 text-primary">المحفظة — فودافون/انستاباي ({{ report.wallet_net|round(2) }})</h6>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <tbody>
+              <tr><td>الاشتراكات</td><td class="text-end text-success">+{{ report.rep.sub_wallet|round(2) }}</td></tr>
+              <tr><td>المبيعات</td><td class="text-end text-success">+{{ report.rep.sale_wallet|round(2) }}</td></tr>
+              <tr><td>الحصص</td><td class="text-end text-success">+{{ report.rep.session_wallet|round(2) }}</td></tr>
+              <tr><td>سداد السلف</td><td class="text-end text-success">+{{ report.rep.loan_repay_wallet|round(2) }}</td></tr>
+              <tr><td>المصروفات</td><td class="text-end text-danger">-{{ report.rep.withdrawals_wallet|round(2) }}</td></tr>
+              <tr><td>سلف منصرفة</td><td class="text-end text-danger">-{{ report.rep.loans_given_wallet|round(2) }}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body">
+    <h6 class="mb-3">إجمالي اليوم — {{ report.date }}</h6>
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <tbody>
+          <tr><th>إجمالي الداخل (كاش + محفظة)</th><td class="text-success text-end fw-bold">{{ report.total_in|round(2) }}</td></tr>
+          <tr><th>إجمالي الخارج (كاش + محفظة)</th><td class="text-danger text-end fw-bold">{{ report.total_out|round(2) }}</td></tr>
+          <tr class="table-primary fw-bold"><th>الصافي الكلي</th><td class="text-end">{{ report.net|round(2) }}</td></tr>
+          <tr class="table-light fw-bold"><th>عدد الحضور</th><td class="text-end">{{ report.checkins }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-4 mb-4">
+  <div class="card-body">
+    <h5 class="mb-3"><i class="bi bi-list-columns-reverse"></i> سجل الحركات بالتفصيل ({{ report.transactions|length }} حركة)</h5>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>الوقت</th>
+            <th>البيان</th>
+            <th>القيمة</th>
+            <th>طريقة الدفع</th>
+            <th>الموظف</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in report.transactions %}
+          <tr>
+            <td class="text-muted small" dir="ltr">{{ t['created_at'].split('T')[1][:8] if 'T' in t['created_at'] else t['created_at'] }}</td>
+            <td class="fw-semibold">{{ t['reason'] }}</td>
+            <td>
+              {% if t['direction'] == 'in' %}
+                <span class="text-success fw-bold">+{{ t['amount']|round(2) }}</span>
+              {% else %}
+                <span class="text-danger fw-bold">-{{ t['amount']|round(2) }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if t['payment_method'] == 'wallet' %}
+                <span class="badge bg-primary text-white"><i class="bi bi-wallet2"></i> محفظة</span>
+              {% else %}
+                <span class="badge bg-success text-white"><i class="bi bi-cash"></i> كاش</span>
+              {% endif %}
+            </td>
+            <td class="small">{{ t['user_name'] or 'نظام' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-3">لا توجد حركات مسجلة في هذا اليوم.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

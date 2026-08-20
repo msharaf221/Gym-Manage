@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}تعديل عضو{% endblock %}
+{% block page_title %}تعديل عضو{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body p-4">
+    <form method="POST" action="{{ url_for('edit_member', member_id=member['id']) }}">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">الاسم الكامل *</label>
+          <input type="text" name="full_name" class="form-control" value="{{ member['full_name'] }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">الهاتف</label>
+          <input type="text" name="phone" class="form-control" value="{{ member['phone'] }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">واتساب</label>
+          <input type="text" name="whatsapp" class="form-control" value="{{ member['whatsapp'] }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">النوع</label>
+          <select name="gender" class="form-select">
+            <option value="">-- اختر --</option>
+            <option value="male" {{ 'selected' if member['gender'] == 'male' }}>ذكر</option>
+            <option value="female" {{ 'selected' if member['gender'] == 'female' }}>أنثى</option>
+          </select>
+        </div>
+        <div class="col-md-9">
+          <label class="form-label small fw-semibold">الوصف</label>
+          <input type="text" name="description" class="form-control" value="{{ member['description'] }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold">ملاحظات</label>
+          <textarea name="notes" class="form-control" rows="2">{{ member['notes'] }}</textarea>
+        </div>
+      </div>
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary px-4">تحديث</button>
+        <a href="{{ url_for('member_detail', member_id=member['id']) }}" class="btn btn-outline-secondary">إلغاء</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

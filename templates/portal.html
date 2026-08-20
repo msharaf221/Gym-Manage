@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>استعلام عن الاشتراك - {{ gym_name }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Cairo', Tahoma, sans-serif; }
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+           background: linear-gradient(135deg, #111827 0%, {{ primary_color }} 100%); }
+    .card { width: 420px; max-width: 94vw; border: none; border-radius: 1.2rem; }
+    .logo { width: 64px; height: 64px; border-radius: 1rem; display: flex; align-items: center;
+            justify-content: center; font-size: 1.7rem; color: #fff; background: {{ primary_color }}; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="card shadow">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <div class="logo"><i class="bi bi-lightning-charge-fill"></i></div>
+        <h5 class="mt-2 mb-0">{{ gym_name }}</h5>
+        <div class="text-muted small">استعلام عن الاشتراك</div>
+      </div>
+
+      <form method="POST" action="{{ url_for('member_portal') }}">
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="رقم العضو أو رقم الهاتف" required>
+        </div>
+        <button class="btn btn-primary w-100 py-2">استعلام</button>
+      </form>
+
+      {% if error %}
+      <div class="alert alert-danger mt-3 py-2 small">{{ error }}</div>
+      {% endif %}
+
+      {% if result %}
+      <div class="mt-4">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <h5 class="mb-1">{{ result.name }}</h5>
+            <div class="text-muted small mb-2">رقم العضو #{{ result.id }}</div>
+            <ul class="list-group list-group-flush small">
+              <li class="list-group-item d-flex justify-content-between bg-transparent px-0">
+                <span class="text-muted">الاشتراك</span><span>{{ result.plan or '-' }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between bg-transparent px-0">
+                <span class="text-muted">تاريخ الانتهاء</span><span>{{ result.end_date or '-' }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between bg-transparent px-0">
+                <span class="text-muted">المتبقي (أيام)</span>
+                <span>{{ result.days_left if result.days_left is not none else '-' }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between bg-transparent px-0">
+                <span class="text-muted">متبقي المبلغ</span>
+                <span class="{% if result.remaining > 0 %}text-danger{% endif %}">{{ result.remaining }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between bg-transparent px-0 border-0">
+                <span class="text-muted">الحالة</span>
+                {% if result.status == 'active' %}
+                <span class="badge bg-success">نشط</span>
+                {% elif result.status == 'frozen' %}
+                <span class="badge bg-info">مجمّد</span>
+                {% else %}
+                <span class="badge bg-danger">منتهي</span>
+                {% endif %}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
