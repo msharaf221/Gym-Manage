@@ -158,17 +158,9 @@ def _ar(text):
         
     except Exception:
         return str(text)[::-1]
-# --- هنا هتلاقي دالة _ar القديمة ---
-def _ar(text):
-    # ... الكود بتاع الـ reshaper اللي عدلناه ...
-    return get_display(reshaper.reshape(str(text)))
-
-# --- ضيف الدالة الجديدة هنا بالضبط ---
 def _ar_value(ar_label, value):
     """Arabic label + an LTR value (date/number) - keeps the value intact."""
     return _ar(f'{ar_label} \u202a{value}\u202ac')
-
-# --- باقي الكود بتاعك ---
 
 def _font(size, weight=400):
     """Load Cairo (variable) with a given weight; fallback to any Arabic TTF."""
